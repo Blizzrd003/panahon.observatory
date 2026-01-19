@@ -1,66 +1,150 @@
 <template>
-  <div>
-    <SelectRoot :model-value="modelValue" @update:model-value="handleChange" by="id">
-      <SelectTrigger
-        class="inline-flex w-full items-center justify-between rounded-lg text-xs md:text-sm bg-white text-gray-900 px-2 py-1 shadow-md ring-gray-700 ring-1"
-      >
-        <SelectValue class="truncate">{{ modelValue?.name ?? 'Loading...' }}</SelectValue>
-        <div class="i-mdi-chevron-down w-5 h-5" />
-      </SelectTrigger>
-      <SelectPortal>
-        <SelectContent align="center" class="w-full min-w-18 bg-white rounded-lg border shadow-sm text-xs md:text-sm">
-          <SelectScrollUpButton class="flex items-center justify-center bg-white text-blue-400 cursor-default">
-            <div class="i-mdi-chevron-up w-5 h-5" />
-          </SelectScrollUpButton>
-          <SelectViewport class="p-1">
-            <SelectItem
-              v-for="stn in stations"
-              :key="stn.id"
-              :value="stn"
-              class="text-xs md:text-sm leading-none flex w-full items-center pl-7 pr-2 py-2 relative select-none data-[highlighted]:outline-none data-[highlighted]:bg-blue-400 data-[highlighted]:text-gray-200 data-[state=checked]:text-blue-400"
-            >
-              <SelectItemIndicator class="absolute left-2 inline-flex items-center justify-center">
-                <div class="i-mdi-check w-3 h-3" />
-              </SelectItemIndicator>
-              <SelectItemText>{{ stn.name }}</SelectItemText>
-            </SelectItem>
-          </SelectViewport>
-          <SelectScrollDownButton class="flex items-center justify-center bg-white text-blue-400 cursor-default">
-            <div class="i-mdi-chevron-down w-5 h-5" />
-          </SelectScrollDownButton>
-        </SelectContent>
-      </SelectPortal>
-    </SelectRoot>
+  <div class="graph-container">
+    <h3>Graph Projection</h3>
+
+    <p><strong>Province:</strong> {{ selectedProvince }}</p>
+    <p><strong>Model:</strong> {{ selectedModel }}</p>
+    <button @click="updateChartData">Show Graph</button>
+    <div style="width: 100%; height: 400px; position: relative">
+      <canvas id="myChart"></canvas>
+    </div>
+    <table v-if="filteredData && filteredData.length" class="data-table">
+      <thead>
+        <tr>
+          <th>Year</th>
+          <th>Anomaly</th>
+          <th>Experiment</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="(item, index) in filteredData" :key="index">
+          <td>{{ item.year }}</td>
+          <td>{{ item.data }}</td>
+          <td>{{ item.experiment }}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p v-else>No data available</p>
   </div>
 </template>
 
 <script setup lang="ts">
-  import {
-    SelectRoot,
-    SelectTrigger,
-    SelectValue,
-    SelectPortal,
-    SelectContent,
-    SelectScrollUpButton,
-    SelectScrollDownButton,
-    SelectViewport,
-    SelectItem,
-    SelectItemIndicator,
-    SelectItemText,
-  } from 'reka-ui'
+  import { ref, onMounted, watch } from 'vue'
+  import Chart from 'chart.js/auto'
 
-  import type { StationObs } from '@/types/station'
-
-  defineProps<{
-    modelValue: StationObs
-    stations?: StationObs[]
-  }>()
-
-  const emit = defineEmits<{
-    'update:modelValue': [stn: StationObs]
-  }>()
-
-  const handleChange = (stn: StationObs) => {
-    emit('update:modelValue', stn)
+  // Define props
+  interface FilteredDataItem {
+    year: string
+    data: number
+    experiment: string
   }
+
+  const props = defineProps<{
+    selectedProvince: string
+    selectedModel: string
+    filteredData: FilteredDataItem[]
+  }>()
+
+  function renderChart() {
+    const ssp126Data = props.filteredData.filter((item) => item.experiment === 'ssp126')
+    const labels = ssp126Data.map((item) => item.year)
+    const datasetData = ssp126Data.map((item) => Number(item.data))
+    console.log('RenderChart called')
+
+    if (myChart.value) {
+      // Update existing chart
+      console.log('myChart has a value')
+      myChart.value.data.labels = labels
+      myChart.value.data.datasets[0].data = datasetData
+      myChart.value.data.datasets[0].label = props.selectedProvince
+      myChart.value.update('none') // <-- smoothly update the chart
+      console.log('updated chart value')
+      return
+    }
+    console.log('myChart has no value')
+    // Create chart for the first time
+    const data = {
+      labels,
+      datasets: [
+        {
+          label: props.selectedProvince,
+          backgroundColor: 'rgb(255,99,132)',
+          borderColor: 'rgb(255,99,132)',
+          data: datasetData,
+          fill: false,
+          tension: 0.2,
+          pointRadius: 4,
+        },
+      ],
+    }
+
+    const config = {
+      type: 'line' as const,
+      data,
+      options: {
+        animation: {
+          duration: 500, // smooth animation on update
+        },
+        responsive: true,
+        maintainAspectRatio: false,
+      },
+    }
+
+    const canvas = document.getElementById('myChart') as HTMLCanvasElement
+    if (canvas) {
+      myChart.value = new Chart(canvas, config)
+      console.log('Created new chart')
+    }
+  }
+
+  // On mounted, render chart
+  onMounted(() => {
+    if (props.filteredData.length) renderChart()
+  })
+
+  // Watch for reactive updates
+  watch(
+    () => props.filteredData,
+    (newData) => {
+      if (newData.length) renderChart()
+    },
+    { deep: true },
+  )
 </script>
+
+<style scoped>
+  #myChart {
+    background-color: #ffffff;
+  }
+  .graph-container {
+    padding: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 0.5rem;
+  }
+
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+    color: #111827; /* text-gray-900 */
+  }
+
+  /* Body cells */
+  .data-table td {
+    background-color: transparent; /* transparent */
+    color: #ffffff; /* white text */
+    border: 1px solid #ccc;
+    padding: 0.5rem 1rem;
+    text-align: center;
+  }
+  /* Header */
+  .data-table th {
+    background-color: #ffffff; /* white */
+    color: #000000; /* black text */
+    font-weight: bold;
+    border: 1px solid #ccc;
+    padding: 0.5rem 1rem;
+    text-align: center;
+  }
+</style>
