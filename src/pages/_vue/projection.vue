@@ -57,7 +57,9 @@
 
     try {
       const res = await fetch(`/api/filtereddata?${params}`)
-      filteredData.value = await res.json()
+      const data = await res.json()
+      filteredData.value = data.mapped
+      console.log(data.yearExperimentMap)
     } catch (err) {
       console.error('Failed to fetch filtered data:', err)
     }

@@ -9,6 +9,6 @@ const { provinces, models } = getProvincesData()
 <DefaultLayout>
   <!-- uses default from ./layouts -->
   <!-- Pass server-side data as props -->
-  <ClimatePage client:visible {provinces} {models} />
+  <ClimatePage client:visible {provinces} {models}/>
   <!-- inserts ClimatePage from ./components into layout slot -->
 </DefaultLayout>

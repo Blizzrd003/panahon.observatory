@@ -23,16 +23,53 @@ function getFilteredData(selectedProvince: string, selectedModel?: string) {
   });
 
   let filtered = records.filter(r => r.province === selectedProvince);
-
+  const yearExperimentMap = {}
   if (selectedModel && selectedModel !== 'Multi-model') {
     filtered = filtered.filter(r => r.model === selectedModel);
+  }else if (selectedModel && selectedModel === 'Multi-model') {
+    // Compute average across all models for each year & experiment
+    const yearExperimentMap: Record<string, Record<string, number[]>> = {};
+
+    filtered.forEach(r => {
+      if (!yearExperimentMap[r.YEAR]) yearExperimentMap[r.YEAR] = {};
+      if (!yearExperimentMap[r.YEAR][r.experiment]) yearExperimentMap[r.YEAR][r.experiment] = [];
+      yearExperimentMap[r.YEAR][r.experiment].push(Number(r.ANOMALY_C));
+    });
+    const mapped: { year: string; data: number; experiment: string }[] = [];
+
+    Object.keys(yearExperimentMap).forEach(year => {
+      Object.keys(yearExperimentMap[year]).forEach(experiment => {
+        const values = yearExperimentMap[year][experiment];
+        const avg = values.reduce((sum, val) => sum + val, 0) / values.length;
+        mapped.push({
+          year,
+          data: avg,
+          experiment
+        });
+      });
+    });
+
+    return {
+      mapped,
+      yearExperimentMap
+    }
   }
   // Map to the shape your frontend expects
-  return filtered.map(r => ({
+  const mapped = filtered.map(r => ({
     year: r.YEAR,
     data: r.ANOMALY_C, // make sure this is a number, not string
     experiment: r.experiment
   }));
+
+  return {
+    mapped,
+    yearExperimentMap
+  }
+  //return filtered.map(r => ({
+  //  year: r.YEAR,
+  //  data: r.ANOMALY_C, // make sure this is a number, not string
+    experiment: r.experiment
+  //}));
   //return filtered.map(r => ({ year: r.YEAR, data: r.ANOMALY_C }));
 }
 
