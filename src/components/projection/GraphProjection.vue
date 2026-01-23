@@ -4,9 +4,15 @@
 
     <p><strong>Province:</strong> {{ selectedProvince }}</p>
     <p><strong>Model:</strong> {{ selectedModel }}</p>
-    <div style="width: 100%; height: 500px; position: relative">
-      <canvas id="myChart"></canvas>
-    </div>
+    <div style="width: 100%; height: 500px; white-space: nowrap;">
+        <!-- Main chart -->
+        <div style="display: inline-block; width: 70%; height: 100%; vertical-align: top; margin-right: 1%;">
+          <canvas id="myChart" style="width: 100%; height: 100%;"></canvas>
+        </div>
+        <!-- Boxplot -->
+        <div id="boxPlot" style="display: inline-block; width: 29%; height: 100%; vertical-align: top;">
+        </div>
+      </div>
     <table v-if="filteredData && filteredData.length" class="data-table">
       <thead>
         <tr>
@@ -31,6 +37,7 @@
 <script setup lang="ts">
   import { ref, onMounted, watch, computed } from 'vue'
   import Chart from 'chart.js/auto'
+  let Plotly: any = null
 
   // Define props
   interface FilteredDataItem {
@@ -133,6 +140,8 @@
       myChart.value.data = data
       myChart.value.update('none') // <-- smoothly update the chart
       console.log('updated chart value')
+      renderBoxPlot()
+      console.log('Created new box plot')
       return
     }
 
@@ -206,17 +215,17 @@
 
                 // Example: baseline period
                 if (year >= 1981 && year <= 2015 && averages.baseline != null) {
-                  return ['Baseline period (1981–2015)', `Average anomaly: ${averages.baseline.toFixed(2)} °C`]
+                  return ['Baseline period (1981–2015)', `Scenario: ${experiment}`, `Average anomaly: ${formatSigned(averages.baseline)} °C`]
                 }
 
                 // Example: mid period
                 if (year >= 2030 && year <= 2055 && averages.mid != null) {
-                  return ['Mid period (2030–2055)', `Average anomaly: ${averages.mid.toFixed(2)} °C`]
+                  return ['Mid period (2030–2055)', `Scenario: ${experiment}`, `Average anomaly: ${formatSigned(averages.mid)} °C`]
                 }
 
                 // Example: far period
                 if (year >= 2056 && year <= 2080 && averages.far != null) {
-                  return ['far period (2056–2080)', `Average anomaly: ${averages.far.toFixed(2)} °C`]
+                  return ['far period (2056–2080)', `Scenario: ${experiment}`, `Average anomaly: ${formatSigned(averages.far)} °C`]
                 }
 
                 return null // no tooltip if year not in any period
@@ -314,8 +323,85 @@
     if (canvas) {
       myChart.value = new Chart(canvas, config)
       console.log('Created new chart')
+      renderBoxPlot()
+
     }
   }
+
+  function renderBoxPlot() {
+    console.log('renderBoxPlot called')
+
+    if (!Plotly) {
+      console.warn('Plotly not loaded yet')
+      return
+    }
+
+    const div = document.getElementById('boxPlot')
+    if (!div) return
+
+    // Group data by experiment
+    const grouped: Record<string, number[]> = {}
+    props.filteredData.forEach(item => {
+      const exp = item.experiment
+      const val = Number(item.data)
+      if (!grouped[exp]) grouped[exp] = []
+      grouped[exp].push(val)
+    })
+
+    const experiments = Object.keys(grouped).sort((a, b) => {
+      if (a === 'historical') return -1
+      if (b === 'historical') return 1
+      return a.localeCompare(b)
+    })
+
+    // Create Plotly traces
+    const data = experiments.map((exp, idx) => ({
+      y: grouped[exp],
+      type: 'box',
+      name: exp,
+      boxpoints: 'outliers',
+      marker: { color: colorPalette[idx % colorPalette.length] },
+      line: { color: colorPalette[idx % colorPalette.length], width: 2 },
+    }))
+
+    const layout = {
+      margin: { t: 70, b: 50, l: 80, r: 20 },
+      yaxis: {
+        title: {
+          text: 'Temperature Anomaly °C',
+          font: {
+            size: 14,
+            family: 'Arial, sans-serif',
+            color: '#000'
+            // NOTE: font-weight is not supported in Plotly
+          }
+        },
+        range: [-1.5, 6],
+        autorange: false,
+        fixedrange: true,
+        zeroline: false,
+      },
+      xaxis: {
+        title: '',           // no x-axis label
+        showticklabels: true, // show the experiment names
+        automargin: true     // automatically adjusts margins so labels fit
+      },
+      legend: true,
+      showlegend: false,
+      autosize: true,
+      title: {
+        text: `Box Plot of Temperature Anomaly in ${props.selectedProvince}`,
+        font: { size: 18 },
+        xref: 'paper',
+        x: 0.5,
+        xanchor: 'center'
+      }
+    }
+  
+    Plotly.newPlot(div, data, layout, { responsive: false })
+    console.log('Created new box plot')
+  }
+
 
   function computeHoverValues(data: FilteredDataItem[]): HoverValues {
     const ranges = {
@@ -390,6 +476,10 @@
     if (year >= 2030 && year <= 2055) return 'mid'
     if (year >= 2056 && year <= 2080) return 'far'
     return null
+  }
+
+  function formatSigned(num: number) {
+    return (num >= 0 ? '+' : '') + num.toFixed(2);
   }
 
   const hoverBackgroundPlugin = {
@@ -485,13 +575,15 @@
   }
 
   // On mounted, render chart
-  onMounted(() => {
+  onMounted(async () => { // <-- make the function async
+    const plotlyModule = await import('plotly.js-dist-min')
+    Plotly = plotlyModule.default
+
     if (props.filteredData.length) {
       hoverValues.value = computeHoverValues(props.filteredData)
       renderChart()
     }
   })
-
   // Watch for reactive updates
   watch(
     () => props.filteredData,
@@ -536,5 +628,9 @@
     border: 1px solid #ccc;
     padding: 0.5rem 1rem;
     text-align: center;
+  }
+
+    #boxPlot {
+    background-color: #ffffff;
   }
 </style>

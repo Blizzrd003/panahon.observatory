@@ -38,7 +38,8 @@
     "zod": "^4.0.5",
     "csv-parse": "^5.5.0",
     "chart.js": "^4.3.0 ",
-    "vue-chartjs": "^5.2.2"
+    "vue-chartjs": "^5.2.2",
+    "plotly.js-dist-min": "^2.27.0"
   },
   "devDependencies": {
     "@iconify-json/fa-solid": "^1.2.1",

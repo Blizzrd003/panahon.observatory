@@ -6,10 +6,10 @@ import { parse } from 'csv-parse/sync';
 interface ProvinceData {
   province: string;
   model: string;
-  TMEAN_C: string;
-  ANOMALY_C: number;
+  value: string;
+  anomaly: number;
   experiment: string;
-  YEAR: string;
+  year: string;
 }
 
 // Function to filter CSV
@@ -26,14 +26,14 @@ function getFilteredData(selectedProvince: string, selectedModel?: string) {
   const yearExperimentMap = {}
   if (selectedModel && selectedModel !== 'Multi-model') {
     filtered = filtered.filter(r => r.model === selectedModel);
-  }else if (selectedModel && selectedModel === 'Multi-model') {
+  } else if (selectedModel && selectedModel === 'Multi-model') {
     // Compute average across all models for each year & experiment
     const yearExperimentMap: Record<string, Record<string, number[]>> = {};
 
     filtered.forEach(r => {
-      if (!yearExperimentMap[r.YEAR]) yearExperimentMap[r.YEAR] = {};
-      if (!yearExperimentMap[r.YEAR][r.experiment]) yearExperimentMap[r.YEAR][r.experiment] = [];
-      yearExperimentMap[r.YEAR][r.experiment].push(Number(r.ANOMALY_C));
+      if (!yearExperimentMap[r.year]) yearExperimentMap[r.year] = {};
+      if (!yearExperimentMap[r.year][r.experiment]) yearExperimentMap[r.year][r.experiment] = [];
+      yearExperimentMap[r.year][r.experiment].push(Number(r.anomaly));
     });
     const mapped: { year: string; data: number; experiment: string }[] = [];
 
@@ -56,8 +56,8 @@ function getFilteredData(selectedProvince: string, selectedModel?: string) {
   }
   // Map to the shape your frontend expects
   const mapped = filtered.map(r => ({
-    year: r.YEAR,
-    data: r.ANOMALY_C, // make sure this is a number, not string
+    year: r.year,
+    data: r.anomaly, // make sure this is a number, not string
     experiment: r.experiment
   }));
 
@@ -66,11 +66,11 @@ function getFilteredData(selectedProvince: string, selectedModel?: string) {
     yearExperimentMap
   }
   //return filtered.map(r => ({
-  //  year: r.YEAR,
+  //  year: r.year,
   //  data: r.ANOMALY_C, // make sure this is a number, not string
-    experiment: r.experiment
+  experiment: r.experiment
   //}));
-  //return filtered.map(r => ({ year: r.YEAR, data: r.ANOMALY_C }));
+  //return filtered.map(r => ({ year: r.year, data: r.ANOMALY_C }));
 }
 
 // Astro GET endpoint

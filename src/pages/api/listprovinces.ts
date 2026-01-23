@@ -7,10 +7,10 @@ import { ref, computed } from 'vue';
 interface ProvinceData {
     province: string;
     model: string;
-    TMEAN_C: string;
-    ANOMALY_C: number;
+    value: string;
+    anomaly: number;
     experiment: string;
-    YEAR: string;
+    year: string;
 }
 
 export function getProvincesData() {
@@ -33,7 +33,7 @@ export function getProvincesData() {
 
     const selectedProvince = ref('');
     const selectedModel = ref(''); // optional
-    const selectedData = ref('ANOMALY_C');
+    const selectedData = ref('anomaly');
 
 
     const filteredData = computed(() => {
@@ -41,7 +41,7 @@ export function getProvincesData() {
     return records
         .filter(r => r.province === selectedProvince.value &&
                     (!selectedModel.value || r.model === selectedModel.value))
-        .map(r => ({ year: r.YEAR, data: r[selectedData.value as keyof typeof r] }));
+        .map(r => ({ year: r.year, data: r[selectedData.value as keyof typeof r] }));
     });
 
     return { provinces, models };

@@ -65,6 +65,9 @@ importers:
       pdf-to-img:
         specifier: ^4.5.0
         version: 4.5.0
+      plotly.js-dist-min:
+        specifier: ^2.27.0
+        version: 2.35.3
       reka-ui:
         specifier: ^2.4.1
         version: 2.4.1(typescript@5.8.3)(vue@3.5.17(typescript@5.8.3))
@@ -3564,6 +3567,9 @@ packages:
 
   pkg-types@2.2.0:
     resolution: {integrity: sha512-2SM/GZGAEkPp3KWORxQZns4M+WSeXbC2HEvmOIJe3Cmiv6ieAJvdVhDldtHqM5J1Y7MrR1XhkBT/rMlhh9FdqQ==}
+
+  plotly.js-dist-min@2.35.3:
+    resolution: {integrity: sha512-sz2HLP8gkysLx/BanM2PtJTtZ1PLPwdHwMWNri2YxLBy3IOeuDsVQtlmWa4hoK3j/fi4naaD3uZJqH5ozM3zGg==}
 
   possible-typed-array-names@1.1.0:
     resolution: {integrity: sha512-/+5VFTchJDoVj3bhoqi6UeymcD00DAwb1nJwamzPvHEszJ4FpF6SNNbUbOS8yI56qHzdV8eK0qEfOSiodkTdxg==}
@@ -9039,6 +9045,8 @@ snapshots:
       confbox: 0.2.2
       exsolve: 1.0.7
       pathe: 2.0.3
+
+  plotly.js-dist-min@2.35.3: {}
 
   possible-typed-array-names@1.1.0: {}
 
