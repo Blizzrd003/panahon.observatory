@@ -10,11 +10,7 @@
     <div class="content">
       <h2>Graph / Projection Area</h2>
       <!-- You can add GraphProjection or other components here -->
-      <GraphProjection
-        :selectedProvince="selectedProvince"
-        :selectedModel="selectedModel"
-        :filteredData="filteredData"
-      />
+      <GraphProjection :selectedProvince="selectedProvince" :filteredData="filteredData" />
     </div>
   </div>
 </template>
@@ -37,28 +33,30 @@
   const models = props.models
 
   const selectedProvince = ref('')
-  const selectedModel = ref('')
+  //const selectedModel = ref('')
+  const selectedModel = 'Multi-model'
   const filteredData = ref<{ year: string; data: number; experiment: string }[]>([])
 
   // Handler
   function handleUpdate(data: { province: string; model: string }) {
     selectedProvince.value = data.province
-    selectedModel.value = data.model
+    //selectedModel.value = data.model
   }
 
   // Fetch function
   async function fetchFilteredData() {
-    if (!selectedProvince.value || !selectedModel.value) return
+    if (!selectedProvince.value) return
 
     const params = new URLSearchParams({
       province: selectedProvince.value,
-      model: selectedModel.value,
+      model: selectedModel, //.value only for when var is ref,
     })
 
     try {
       const res = await fetch(`/api/filtereddata?${params}`)
       const data = await res.json()
       filteredData.value = data.mapped
+      console.log('filteredData.value:', filteredData.value)
       console.log(data.yearExperimentMap)
     } catch (err) {
       console.error('Failed to fetch filtered data:', err)
@@ -67,23 +65,23 @@
 
   // Initialize selection when props are ready
   watch(
-    () => [props.provinces, props.models],
+    () => [props.provinces],
     ([newProvinces, newModels]) => {
       if (newProvinces.length && !selectedProvince.value) {
         selectedProvince.value = newProvinces[0]
       }
-      if (newModels.length && !selectedModel.value) {
-        selectedModel.value = newModels[0]
-      }
+      //if (newModels.length && !selectedModel.value) {
+      //  selectedModel.value = newModels[0]
+      //}
       // Only fetch if both are set
-      if (selectedProvince.value && selectedModel.value) {
+      if (selectedProvince.value && selectedModel) {
         fetchFilteredData()
       }
     },
     { immediate: true },
   )
   // Watch selection changes
-  watch([selectedProvince, selectedModel], () => {
+  watch([selectedProvince], () => {
     fetchFilteredData()
   })
 </script>
